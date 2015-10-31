@@ -1,0 +1,32 @@
+---
+layout: default
+title: Welcome!
+generator: pagination
+pagination:
+max_per_page: 3
+use:
+- posts
+---
+
+{% for post in page.pagination.items %}
+<section class="post">
+    <h3 class="post-title">
+        <a href="{{ site.url }}{{ post.url }}">{{ post.title }}</a>
+        <br />
+        {{ post.date|date("F jS\, Y") }}
+        <span class="taglist">
+            &middot;
+            {% for tag in post.tags %}
+            <a href="{{ site.url }}/tag/{{ tag|url_encode(true) }}">{{ tag }}</a>
+            {% endfor %}
+        </span>
+    </h3>
+</section>
+{% endfor %}
+{% if page.pagination.previous_page or page.pagination.next_page %}
+<nav class="pagination" role="pagination">
+    {% if page.pagination.previous_page %}<a class="newer-posts" href="{{ site.url }}{{ page.pagination.previous_page.url }}">&larr; Newer</a> <span class="separator">|</span> {% endif %}
+    <span class="page-number">Page {{ page.pagination.page }} of {{ page.pagination.total_pages }}</span>
+    {% if page.pagination.next_page %}<span class="separator">|</span> <a class="older-posts" href="{{ site.url }}{{ page.pagination.next_page.url }}">Older &rarr;</a>{% endif %}
+</nav>
+{% endif %}

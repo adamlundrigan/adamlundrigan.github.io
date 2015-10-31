@@ -1,0 +1,44 @@
+{% extends "default" %}
+
+{% block head_meta %}
+{% endblock %}
+
+{% block content_wrapper %}
+<article class="post">
+    <div class="post-stamp">
+        {{ page.date|date("F jS\, Y") }}
+        <span class="taglist">
+            &middot;
+            {% for tag in page.tags %}
+            <a href="{{ site.url }}/tag/{{ tag|url_encode(true) }}">{{ tag }}</a>
+            {% endfor %}
+        </span>
+    </div>
+    <h1 class="post-title">{{ page.title }}</h1>
+
+    {{ page.blocks.content|raw }}
+
+</article>
+
+{% if site.disqus.shortname and site.disqus.shortname != '' %}
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = '{{site.disqus.shortname}}';
+    {% if page.disqus.identifier  %}var disqus_identifier = '{{page.disqus.identifier}}'; {% endif %}
+    {% if page.disqus.title %}var disqus_title = '{{page.disqus.title}}';{% endif %}
+    {% if page.disqus.url %}var disqus_url = '{{page.disqus.url}}';{% endif %}
+    {% if page.disqus.category_id %}var disqus_category_id = '{{page.disqus.category_id}}';{% endif %}
+    (function () {
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the
+    <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered byDisqus.</a>
+</noscript>
+{% endif %}
+
+{% endblock %}
