@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <title>Doctrine collections and nested ZF2 fieldset collections &mdash; Adam Lundrigan &mdash; </title>
+
+    <link rel="canonical" href="" />
+    <link rel="alternate" type="application/rss+xml" title="Adam Lundrigan" href="/rss.xml" />
+
+    <meta name="robots" content="noindex, follow">
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="MobileOptimized" content="320" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <link rel="shortcut icon" href="/assets/images/527329.png"/>
+    <link href='//fonts.googleapis.com/css?family=Open+Sans:300italic,700italic,300,700' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Bree+Serif' rel='stylesheet' type='text/css'>
+    <link href="//cdn.jsdelivr.net/fontawesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/highlight.js/8.9.1/styles/default.min.css">
+    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/pure/0.6.0/pure-min.css">
+    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/pure/0.6.0/grids-responsive-min.css">
+    <link rel="stylesheet" type="text/css" href="/assets/styles/crisp.css">
+    <link rel="stylesheet" type="text/css" href="/assets/styles/mine.css">
+                </head>
+<body class="home-template">
+
+<header id="header">
+    <div class="pure-g">
+        <div class="pure-u-1 pure-u-sm-1-2 pure-u-md-1-1">
+            <a id="logo" href="/"><img src="/assets/images/527329.png" alt="Adam Lundrigan" /></a>
+        </div>
+        <div class="pure-u-1 pure-u-sm-1-2 pure-u-md-1-1">
+            <h1><a href="/">Adam Lundrigan</a></h1>
+            <div class="pure-g" style="margin-top: 25px;">
+                <div class="pure-u-1-2" style="text-align:right; padding-right: 3px;">
+                    <a href="http://www.zend.com/en/store/education/certification/yellow-pages.php#show-ClientCandidateID=ZEND012859" target="_blank"><img width="86" src="/assets/images/ZCPE-logo-XS.jpg" /></a>
+                </div>
+                <div class="pure-u-1-2" style="text-align:left; padding-left: 3px;">
+                    <a href="http://www.zend.com/en/store/education/certification/yellow-pages.php#show-ClientCandidateID=ZEND012859" target="_blank"><img width="86" src="/assets/images/zfca-logo-m.jpg" /></a>
+                </div>
+            </div>
+
+            <a class="pure-button" href="/about" style="margin-top: 30px;">
+                <i class="fa fa-question-circle"></i>
+                About Me
+            </a>
+
+        </div>
+    </div>
+</header>
+<main id="content">
+    <article class="post">
+    <div class="post-stamp">
+        April 25th, 2014
+        <span class="taglist">
+            &middot;
+                        <a href="/tag/php">php</a>
+                        <a href="/tag/zend%20framework%202">zend framework 2</a>
+                        <a href="/tag/doctrine%20orm">doctrine orm</a>
+                    </span>
+    </div>
+    <h1 class="post-title">Doctrine collections and nested ZF2 fieldset collections</h1>
+
+    <p>On a recent project, which uses a ZF2 Form+Fieldset+InputFilter confab to hydrate a matching Doctrine ORM object model, I encountered something new: collection instances get shared between collections when using collections inside of collections (Yes, you read that right :P)</p>
+
+<p>The Situation:</p>
+
+<p>In our domain model, Competitions contain one or more Divisions, which themselves contain one or more Teams:</p>
+
+<pre><code>Competition &lt;-- Division &lt;-- Team
+</code></pre>
+
+<p>As implemented with ZF2 forms, the <code>CompetitionFieldset</code> contains a <code>Zend\Form\Element\Collection</code> element, which holds all the divisions of the competition as <code>DivisionFieldset</code> instances:</p>
+
+<pre><code>// Competition Fieldset
+class CompetitionFieldset extends Fieldset
+{
+    public function init()
+    {
+        // snipped for brevity
+        // $fsDivision instanceof DivisionFieldset
+
+        $this-&gt;add(array(
+            'type'    =&gt; 'Zend\Form\Element\Collection',
+            'name'    =&gt; 'divisions',
+            'options' =&gt; array(
+                'target_element' =&gt; $fsDivision,
+            )
+        ));
+    }
+}
+
+// Competition Entity
+class CompetitionEntity
+{
+    protected $divisions;
+
+    public function __construct()
+    {
+        $this-&gt;divisions = new ArrayCollection();
+    }
+}
+</code></pre>
+
+<p>The Division fieldset itself contains a Collection element holding all of the teams assigned to the division, as instances of <code>TeamFieldset</code></p>
+
+<pre><code>// Division fieldset
+class DivisionFieldset extends Fieldset
+{
+    public function init()
+    {
+        // snipped for brevity
+        // $fsTeam instanceof TeamFieldset
+
+        $this-&gt;add(array(
+            'type'    =&gt; 'Zend\Form\Element\Collection',
+            'name'    =&gt; 'teams',
+            'options' =&gt; array(
+                'target_element' =&gt; $fsTeam,
+            )
+        ));
+    }
+}
+
+// Division entity
+class DivisionEntity
+{
+    protected $teams;
+
+    public function __construct()
+    {
+        $this-&gt;teams = new ArrayCollection();
+    }
+}
+</code></pre>
+
+<p>Once everything is collected together into a form and the <code>DoctrineObject</code> hydrators and prototype entity instances are all assigned to the form and it's respective fieldsets, an issue popped up:</p>
+
+<p>When I add multiple divisions to the competition, assign some teams to each one, submit the form and wait for <code>Zend\Form</code> and Doctrine to do their turn-that-POST-nonsense-into-a-PHP-object thing, it goes sideways.  All the divisions I added are properly represented in the <code>CompetitionEntity::divisions</code> collection as distinct <code>DivisionEntity</code> instances, but they all have the same set of <code>TeamEntity</code> objects in their <code>teams</code> collection.  Indeed, all the <code>DivisionEntity</code> objects have the <em>same</em> <code>ArrayCollection</code>.  Why?</p>
+
+<p>The answer is, in hindsight, simple:  <code>Zend\Form\Element\Collection</code> takes the prototype object we gave it's fieldset and <code>clone</code>s it for each element of the <code>divisions</code> array in the POST data.  However, PHP doesn't deep-clone, and so all those clones of <code>DivisionEntity</code> share the same internal instance of <code>ArrayCollection</code> that was assigned to <code>teams</code> in the prototype object.  To prevent this we have to give each clone it's own <code>ArrayCollection</code> instance by adding a <code>__clone</code> method to the class:</p>
+
+<pre><code>class DivisionEntity
+{
+    protected $teams;
+
+    public function __construct()
+    {
+        $this-&gt;teams = new ArrayCollection();
+    }
+
+    public function __clone()
+    {
+        $this-&gt;teams = new ArrayCollection();
+    }
+}
+</code></pre>
+
+<p>And Bob's your uncle, all is well once again in ZF2+Doctrine land :)</p>
+
+<p><strong>Summary &amp; TL;DR</strong>: if the object you bind to a fieldset placed in an <code>Zend\Form\Element\Collection</code> element composes other objects, you need to add an <code>__clone</code> method to give each clone their own instance of each associated object, as in the <code>DivisionEntity</code> example above.  </p>
+
+
+</article>
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'adamlundrigan';
+    var disqus_identifier = '2';                 (function () {
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the
+    <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered byDisqus.</a>
+</noscript>
+
+</main>
+
+<footer id="footer">
+    <section id="footer-message">
+        &copy; 2015 Adam Lundrigan &mdash;
+        Built with <a href="http://sculpin.io" target="_blank">Sculpin</a> &mdash;
+        <a href="https://github.com/kathyqian/crisp-ghost-theme" target="_blank">Crisp</a> theme by <a href="http://kathyqian.com" target="_blank">Kathy Qian</a>
+    </section>
+</footer>
+
+<script src="//cdn.jsdelivr.net/highlight.js/8.9.1/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script src="//cdn.jsdelivr.net/jquery/2.1.4/jquery.min.js"></script>
+</body>
+</html>

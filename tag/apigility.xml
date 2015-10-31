@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title><![CDATA[Adam Lundrigan]]></title>
+    <link href="/tag/apigility.xml" rel="self"/>
+    <link href="/"/>
+    <updated>2015-10-31T15:06:39-02:30</updated>
+    <id>/</id>
+        <generator uri="http://sculpin.io/">Sculpin</generator>
+            <entry>
+            <title type="html"><![CDATA[Using ZfcUser with Apigility, Part 1]]></title>
+            <link href="/2014/11/08/using-zfcuser-with-apigility-part-1"/>
+            <updated>2014-11-08T12:47:50-03:30</updated>
+            <id>/2014/11/08/using-zfcuser-with-apigility-part-1</id>
+            <content type="html"><![CDATA[<p>As part of my ongoing quest to build out a REST and RPC API using <a href="http://apigility.org">Apigility</a>, I've been working on integrating <a href="https://github.com/zf-commons/ZfcUser">ZfcUser</a> into an Apigility application.  The first fruit of this labour &mdash; <a href="https://github.com/adamlundrigan/LdcZfcUserOAuth2">LdcZfcUserOAuth2</a> &mdash; is now available on my GitHub.</p>
+
+<h2 id="whatisit">What is it?</h2>
+
+<p><a href="https://github.com/adamlundrigan/LdcZfcUserOAuth2">LdcZfcUserOAuth2</a> is a module which integrates ZfcUser into the OAuth2 authentication process (<code>zf-oauth2</code> module).  This is accomplished by creating a <a href="https://github.com/adamlundrigan/LdcZfcUserOAuth2/blob/master/src/Storage/ZfcUserPdo.php">custom storage adapter</a> for <a href="https://github.com/bshaffer/oauth2-server-php"><code>oauth2-server-php</code></a> which delegates the account lookup and authentication to ZfcUser.  A <a href="https://github.com/adamlundrigan/LdcZfcUserOAuth2/blob/master/src/Authentication/Adapter/Db.php">custom authentication adapter</a> is also injected into ZfcUser's authentication chain to override the hard-coded references to <code>Zend\Session</code>.</p>
+
+<p>This module should also work with <code>ZfcUserDoctrineORM</code> and <code>ZfcUserDoctrineMongoODM</code> I, though haven't yet tested that myself. </p>
+
+<h2 id="howdoigetit">How do I get it?</h2>
+
+<p>GitHub: <a href="https://github.com/adamlundrigan/LdcZfcUserOAuth2">LdcZfcUserOAuth2</a> <br />
+Packagist: <a href="https://packagist.org/packages/adamlundrigan/ldc-zfc-user-oauth2">adamlundrigan/ldc-zfc-user-oauth2</a></p>
+]]></content>
+        </entry>
+            <entry>
+            <title type="html"><![CDATA[Using OAuth2 JWT with Apigility]]></title>
+            <link href="/2014/11/06/using-oauth2-jwt-with-apigility"/>
+            <updated>2014-11-06T16:30:27-03:30</updated>
+            <id>/2014/11/06/using-oauth2-jwt-with-apigility</id>
+            <content type="html"><![CDATA[<p>I'm currently working on a web application which exposes REST and RPC API using <a href="http://apigility.org">Apigility</a>.  The web frontend for this project is built using AngularJS and uses <a href="https://github.com/sahat/satellizer">Satellizer</a> to handle authentication.</p>
+
+<p>Unfortunately Satellizer uses JWT cryptotokens, and Apigility doesn't ship with an easy way to configure the OAuth2 server to use these.  The fix for this?  Quite simple, really.  Apigility defines service factories for all it's internal services, so we can simply define a <a href="http://framework.zend.com/manual/2.3/en/modules/zend.service-manager.delegator-factories.html">service manager delegator factory</a> which injects the <a href="http://bshaffer.github.io/oauth2-server-php-docs/overview/crypto-tokens">necessary configuration</a>.  </p>
+
+<pre><code class="php">&lt;?php
+namespace LdcOAuth2CryptoToken\Factory;
+
+use Zend\ServiceManager\DelegatorFactoryInterface;
+use Zend\ServiceManager\ServiceLocatorInterface;
+
+class CryptoTokenServerFactory implements DelegatorFactoryInterface
+{
+    public function createDelegatorWithName(ServiceLocatorInterface $serviceLocator, $name, $requestedName, $callback)
+    {
+        $server = call_user_func($callback);
+
+        // do dirty, dirty things to $server here
+
+        return $server;
+    }
+}
+</code></pre>
+
+<p>ZF2 rulez!</p>
+
+<p>I've rolled up a <a href="https://github.com/adamlundrigan/LdcOAuth2CryptoToken/blob/master/src/Factory/CryptoTokenServerFactory.php">completed version this factory</a> (+ <a href="https://github.com/zfcampus/zf-mvc-auth/issues/45">a hack for this bug in zf-mvc-auth</a>) into a ZF2 module for your consuming pleasure: </p>
+
+<ul>
+<li>GitHub: <a href="https://github.com/adamlundrigan/LdcOAuth2CryptoToken">adamlundrigan/LdcOAuth2CryptoToken</a></li>
+<li>Packagist: <a href="https://packagist.org/packages/adamlundrigan/ldc-oauth2-crypto-token">adamlundrigan/ldc-oauth2-crypto-token</a></li>
+</ul>
+]]></content>
+        </entry>
+    </feed>

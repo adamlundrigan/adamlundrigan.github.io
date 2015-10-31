@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <title>Imaging the HP ProBook 6560b &mdash; Adam Lundrigan &mdash; </title>
+
+    <link rel="canonical" href="" />
+    <link rel="alternate" type="application/rss+xml" title="Adam Lundrigan" href="/rss.xml" />
+
+    <meta name="robots" content="noindex, follow">
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="MobileOptimized" content="320" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <link rel="shortcut icon" href="/assets/images/527329.png"/>
+    <link href='//fonts.googleapis.com/css?family=Open+Sans:300italic,700italic,300,700' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Bree+Serif' rel='stylesheet' type='text/css'>
+    <link href="//cdn.jsdelivr.net/fontawesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/highlight.js/8.9.1/styles/default.min.css">
+    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/pure/0.6.0/pure-min.css">
+    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/pure/0.6.0/grids-responsive-min.css">
+    <link rel="stylesheet" type="text/css" href="/assets/styles/crisp.css">
+    <link rel="stylesheet" type="text/css" href="/assets/styles/mine.css">
+                </head>
+<body class="home-template">
+
+<header id="header">
+    <div class="pure-g">
+        <div class="pure-u-1 pure-u-sm-1-2 pure-u-md-1-1">
+            <a id="logo" href="/"><img src="/assets/images/527329.png" alt="Adam Lundrigan" /></a>
+        </div>
+        <div class="pure-u-1 pure-u-sm-1-2 pure-u-md-1-1">
+            <h1><a href="/">Adam Lundrigan</a></h1>
+            <div class="pure-g" style="margin-top: 25px;">
+                <div class="pure-u-1-2" style="text-align:right; padding-right: 3px;">
+                    <a href="http://www.zend.com/en/store/education/certification/yellow-pages.php#show-ClientCandidateID=ZEND012859" target="_blank"><img width="86" src="/assets/images/ZCPE-logo-XS.jpg" /></a>
+                </div>
+                <div class="pure-u-1-2" style="text-align:left; padding-left: 3px;">
+                    <a href="http://www.zend.com/en/store/education/certification/yellow-pages.php#show-ClientCandidateID=ZEND012859" target="_blank"><img width="86" src="/assets/images/zfca-logo-m.jpg" /></a>
+                </div>
+            </div>
+
+            <a class="pure-button" href="/about" style="margin-top: 30px;">
+                <i class="fa fa-question-circle"></i>
+                About Me
+            </a>
+
+        </div>
+    </div>
+</header>
+<main id="content">
+    <article class="post">
+    <div class="post-stamp">
+        November 22nd, 2011
+        <span class="taglist">
+            &middot;
+                        <a href="/tag/random">random</a>
+                    </span>
+    </div>
+    <h1 class="post-title">Imaging the HP ProBook 6560b</h1>
+
+    <p>After much (MUCH) head->desk while trying to make Symantec Ghost Solution Suite's WinPE boot disc pick up a network connection on the new HP ProBook 6560b, I've sorted the issue! Thanks, in no small part, to this thread: <a href='http://communities.intel.com/thread/21719'>http://communities.intel.com/thread/21719</a></p>
+
+<p>If you already have a GSS WinPE boot CD you can simply boot into it, and follow these instructions:</p>
+
+<ol>
+<li><a href="http://downloadcenter.intel.com/detail_desc.aspx?agr=Y&amp;DwnldID=18719">Download the latest Intel PRO1000 drivers here</a> (The PROWin32.exe is the one you are looking for.  Yes, it says Server 2003, but that's OK)  </li>
+<li>Using 7-Zip (or similar program) decompress the EXE to a folder on your hard drive  </li>
+<li>Copy the extracted folder to a USB drive  </li>
+<li>Plug the USB drive into the laptop which you've booted into WinPE  </li>
+<li>From the command prompt, navigate to the folder: <code>E:\PROWin32\PRO1000\Win32\NDIS61</code>   (your USB drive may have a different letter)  </li>
+<li>Run this command: <code>drvload e1c6032.inf</code></li>
+</ol>
+
+<p>Voila, you should now have wired network access!  </p>
+
+<p>Of course, you could also create a new WinPE image when using the Symantec Ghost Boot Wizard and include that NDIS61 folder directly in WinPE.  That would eliminate the need to use <code>drvload</code> after booting into WinPE.</p>
+
+
+</article>
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'adamlundrigan';
+    var disqus_identifier = '6';                 (function () {
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the
+    <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered byDisqus.</a>
+</noscript>
+
+</main>
+
+<footer id="footer">
+    <section id="footer-message">
+        &copy; 2015 Adam Lundrigan &mdash;
+        Built with <a href="http://sculpin.io" target="_blank">Sculpin</a> &mdash;
+        <a href="https://github.com/kathyqian/crisp-ghost-theme" target="_blank">Crisp</a> theme by <a href="http://kathyqian.com" target="_blank">Kathy Qian</a>
+    </section>
+</footer>
+
+<script src="//cdn.jsdelivr.net/highlight.js/8.9.1/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script src="//cdn.jsdelivr.net/jquery/2.1.4/jquery.min.js"></script>
+</body>
+</html>

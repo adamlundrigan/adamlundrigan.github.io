@@ -1,0 +1,465 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title><![CDATA[Adam Lundrigan]]></title>
+    <link href="/tag/php.xml" rel="self"/>
+    <link href="/"/>
+    <updated>2015-10-31T15:06:39-02:30</updated>
+    <id>/</id>
+        <generator uri="http://sculpin.io/">Sculpin</generator>
+            <entry>
+            <title type="html"><![CDATA[MODX: Combining AdvSearch and Tagger]]></title>
+            <link href="/2015/04/08/combining-advsearch-and-tagger"/>
+            <updated>2015-04-08T16:46:18-02:30</updated>
+            <id>/2015/04/08/combining-advsearch-and-tagger</id>
+            <content type="html"><![CDATA[<p>A recent client project took me down the path of integrating <a href="http://modx.com/extras/package/advsearch">AdvSearch</a> and <a href="http://modx.com/extras/package/tagger">Tagger</a> with the goal of allowing users to search for a page by tag.  It took much digging (including <a href="https://web.archive.org/web/20130301192620/http://www.revo.wangba.fr/assets/files/advsearch/advsearchHook120_v1.0.pdf">a trip to the Wayback Machine for some lost AdvSearch documentation</a>) but this is the solution I came up with:</p>
+
+<p>Once you have both AdvSearch and Tagger installed and working, all you need to do is create this MODX snippet:</p>
+
+<pre><code class="php">&lt;?php
+
+$modxTablePrefix = 'modx_';
+$taggerModelPath = '{core_path}components/tagger/model/';
+
+$hook-&gt;setQueryHook(array(
+    'qhVersion' =&gt; '1.2',
+    'joined' =&gt; array(
+        array(
+            'package' =&gt; 'tagger',
+            'class' =&gt; 'TaggerTagResource',
+            'packagePath' =&gt; $taggerModelPath,
+            'withFields' =&gt; 'resource',
+            'tablePrefix' =&gt; $modxTablePrefix,
+            'joinCriteria' =&gt; 'TaggerTagResource.resource = modResource.id'
+        ),
+        array(
+            'package' =&gt; 'tagger',
+            'class' =&gt; 'TaggerTag',
+            'packagePath' =&gt; $taggerModelPath,
+            'withFields' =&gt; 'tag',
+            'tablePrefix' =&gt; $modxTablePrefix,
+            'joinCriteria' =&gt; 'TaggerTag.id = TaggerTagResource.tag'
+        ),
+    )
+));
+
+return true;
+</code></pre>
+
+<p>Then add it to your AdvSearch call as a <code>queryHook</code>:</p>
+
+<pre><code>[[!AdvSearch? &amp;queryHook=`your_snippet_name_here`]]
+</code></pre>
+
+<p>...and, voila, any pages which have tags matching a search term will now show up in the AdvSearch search results!</p>
+]]></content>
+        </entry>
+            <entry>
+            <title type="html"><![CDATA[Using ZfcUser with Apigility, Part 1]]></title>
+            <link href="/2014/11/08/using-zfcuser-with-apigility-part-1"/>
+            <updated>2014-11-08T12:47:50-03:30</updated>
+            <id>/2014/11/08/using-zfcuser-with-apigility-part-1</id>
+            <content type="html"><![CDATA[<p>As part of my ongoing quest to build out a REST and RPC API using <a href="http://apigility.org">Apigility</a>, I've been working on integrating <a href="https://github.com/zf-commons/ZfcUser">ZfcUser</a> into an Apigility application.  The first fruit of this labour &mdash; <a href="https://github.com/adamlundrigan/LdcZfcUserOAuth2">LdcZfcUserOAuth2</a> &mdash; is now available on my GitHub.</p>
+
+<h2 id="whatisit">What is it?</h2>
+
+<p><a href="https://github.com/adamlundrigan/LdcZfcUserOAuth2">LdcZfcUserOAuth2</a> is a module which integrates ZfcUser into the OAuth2 authentication process (<code>zf-oauth2</code> module).  This is accomplished by creating a <a href="https://github.com/adamlundrigan/LdcZfcUserOAuth2/blob/master/src/Storage/ZfcUserPdo.php">custom storage adapter</a> for <a href="https://github.com/bshaffer/oauth2-server-php"><code>oauth2-server-php</code></a> which delegates the account lookup and authentication to ZfcUser.  A <a href="https://github.com/adamlundrigan/LdcZfcUserOAuth2/blob/master/src/Authentication/Adapter/Db.php">custom authentication adapter</a> is also injected into ZfcUser's authentication chain to override the hard-coded references to <code>Zend\Session</code>.</p>
+
+<p>This module should also work with <code>ZfcUserDoctrineORM</code> and <code>ZfcUserDoctrineMongoODM</code> I, though haven't yet tested that myself. </p>
+
+<h2 id="howdoigetit">How do I get it?</h2>
+
+<p>GitHub: <a href="https://github.com/adamlundrigan/LdcZfcUserOAuth2">LdcZfcUserOAuth2</a> <br />
+Packagist: <a href="https://packagist.org/packages/adamlundrigan/ldc-zfc-user-oauth2">adamlundrigan/ldc-zfc-user-oauth2</a></p>
+]]></content>
+        </entry>
+            <entry>
+            <title type="html"><![CDATA[Using OAuth2 JWT with Apigility]]></title>
+            <link href="/2014/11/06/using-oauth2-jwt-with-apigility"/>
+            <updated>2014-11-06T16:30:27-03:30</updated>
+            <id>/2014/11/06/using-oauth2-jwt-with-apigility</id>
+            <content type="html"><![CDATA[<p>I'm currently working on a web application which exposes REST and RPC API using <a href="http://apigility.org">Apigility</a>.  The web frontend for this project is built using AngularJS and uses <a href="https://github.com/sahat/satellizer">Satellizer</a> to handle authentication.</p>
+
+<p>Unfortunately Satellizer uses JWT cryptotokens, and Apigility doesn't ship with an easy way to configure the OAuth2 server to use these.  The fix for this?  Quite simple, really.  Apigility defines service factories for all it's internal services, so we can simply define a <a href="http://framework.zend.com/manual/2.3/en/modules/zend.service-manager.delegator-factories.html">service manager delegator factory</a> which injects the <a href="http://bshaffer.github.io/oauth2-server-php-docs/overview/crypto-tokens">necessary configuration</a>.  </p>
+
+<pre><code class="php">&lt;?php
+namespace LdcOAuth2CryptoToken\Factory;
+
+use Zend\ServiceManager\DelegatorFactoryInterface;
+use Zend\ServiceManager\ServiceLocatorInterface;
+
+class CryptoTokenServerFactory implements DelegatorFactoryInterface
+{
+    public function createDelegatorWithName(ServiceLocatorInterface $serviceLocator, $name, $requestedName, $callback)
+    {
+        $server = call_user_func($callback);
+
+        // do dirty, dirty things to $server here
+
+        return $server;
+    }
+}
+</code></pre>
+
+<p>ZF2 rulez!</p>
+
+<p>I've rolled up a <a href="https://github.com/adamlundrigan/LdcOAuth2CryptoToken/blob/master/src/Factory/CryptoTokenServerFactory.php">completed version this factory</a> (+ <a href="https://github.com/zfcampus/zf-mvc-auth/issues/45">a hack for this bug in zf-mvc-auth</a>) into a ZF2 module for your consuming pleasure: </p>
+
+<ul>
+<li>GitHub: <a href="https://github.com/adamlundrigan/LdcOAuth2CryptoToken">adamlundrigan/LdcOAuth2CryptoToken</a></li>
+<li>Packagist: <a href="https://packagist.org/packages/adamlundrigan/ldc-oauth2-crypto-token">adamlundrigan/ldc-oauth2-crypto-token</a></li>
+</ul>
+]]></content>
+        </entry>
+            <entry>
+            <title type="html"><![CDATA[DoctrineModule CLI and multiple entity managers]]></title>
+            <link href="/2014/07/05/doctrinemodule-cli-and-multiple-entity-managers"/>
+            <updated>2014-07-05T23:02:28-02:30</updated>
+            <id>/2014/07/05/doctrinemodule-cli-and-multiple-entity-managers</id>
+            <content type="html"><![CDATA[<p>In working on a project I came across <a href="https://github.com/doctrine/DoctrineORMModule/issues/97">this issue with DoctrineModule</a> - it's Doctrine CLI doesn't support multiple entity managers.  In my project each module uses it's own sandboxed Doctrine config, and this works fine when testing or actually using the application.  However, when deploying the application to a staging server <code>bin/doctrine orm:schema-tool:create</code> complained about having no managed entities; it was looking in <code>orm_default</code> and not finding anything.</p>
+
+<p>Long and short of it is if you're also having this issue, here's a quick hack that will allow you to work around it:</p>
+
+<p><a href='https://gist.github.com/adamlundrigan/c0c87fc5657453212cd0'>https://gist.github.com/adamlundrigan/c0c87fc5657453212cd0</a></p>
+
+<p>Essentially, i've just taken the stock <code>doctrine-module.php</code> file from DoctrineModule and added this immediately after the CLI application is initialized:</p>
+
+<pre><code>// If we've overridden the entity manager via env var, inject the new one
+$entityManagerName = getenv('EM_ALIAS') ?: 'orm_default';
+if ( $application-&gt;getServiceManager()-&gt;has($entityManagerName) ) {
+    $emHelper = new EntityManagerHelper($application-&gt;getServiceManager()-&gt;get($entityManagerName));
+    $cli-&gt;getHelperSet()-&gt;set($emHelper, 'em');
+}
+</code></pre>
+
+<p>Which creates a new <a href="https://github.com/doctrine/doctrine2/blob/master/lib/Doctrine/ORM/Tools/Console/Helper/EntityManagerHelper.php"><code>EntityManagerHelper</code></a> and stores it as <code>em</code> in the CLI helper set. </p>
+]]></content>
+        </entry>
+            <entry>
+            <title type="html"><![CDATA[Zend\Form, Nonuniform Collections and You]]></title>
+            <link href="/2014/06/23/zend-form-nonuniform-collections-and-you"/>
+            <updated>2014-06-23T23:45:19-02:30</updated>
+            <id>/2014/06/23/zend-form-nonuniform-collections-and-you</id>
+            <content type="html"><![CDATA[<p>I'm a fan of, in no particular order, <a href="https://github.com/zendframework/zf2">ZF2</a>'s <a href="http://framework.zend.com/manual/2.3/en/modules/zend.form.quick-start.html">Form</a> component, <a href="http://github.com/doctrine/doctrine2">Doctrine ORM</a> and <a href="https://github.com/adamlundrigan/LdcServiceBuilder">classy service layers</a>.  What can I say?  My brain runs on PHP, but my heart belongs with Java 😛.  </p>
+
+<p>One of the things I like most about Doctrine ORM is <a href="http://docs.doctrine-project.org/en/2.0.x/reference/inheritance-mapping.html">Inheritance Mapping</a> &mdash; more specifically, <a href="http://docs.doctrine-project.org/en/2.0.x/reference/inheritance-mapping.html#class-table-inheritance">Class Table Inheritance</a>.  Since you've made it this far I won't bore you with the details, except to say it allows you to build a ToMany association to a group of related entity classes and treat instances as a single collection.  I think that's awesome...unfortunately Zend\Form does not: it's Collection class will only accept a single Fieldset prototype. </p>
+
+<p>So, what did I do?  I hacked it, and the result is <a href="https://packagist.org/packages/adamlundrigan/ldc-zend-form-cti"><code>LdcZendFormCTI</code></a> (rolls right off the tongue, it does).  Install it via Composer:</p>
+
+<pre><code>composer require adamlundrigan/ldc-zend-form-cti:@stable
+</code></pre>
+
+<p>And now your form collection elements can have super more-than-just-one-fieldset-prototype powers too!  Just add an instanceof <a href="https://github.com/adamlundrigan/LdcZendFormCTI/blob/master/src/Form/Element/NonuniformCollection.php"><code>NonuniformCollection</code></a> to a fieldset, populate it with a prototype <a href="https://github.com/adamlundrigan/LdcZendFormCTI/blob/master/tests/LdcZendFormCTITest/TestCase.php#L141">fieldset+hydrator+object</a> matching each child entity in the inheritance scheme, and Bob's your uncle!  There's also a <a href="https://github.com/adamlundrigan/LdcZendFormCTI/blob/master/src/InputFilter/NonuniformCollectionInputFilter.php"><code>NonuniformCollectionInputFilter</code></a> for configuring filtering and validation, if you're into that sort of thing. </p>
+
+<p>It's a little light on documentation at present, but you can get the gist of how to use it from <a href="https://github.com/adamlundrigan/LdcZendFormCTI/blob/master/tests/LdcZendFormCTITest/TestCase.php#L145">the bundled tests</a>.  I'm working on a README and a simple demo application to show how it all fits together, both of which should be ready soonish. </p>
+]]></content>
+        </entry>
+            <entry>
+            <title type="html"><![CDATA[Sharing context between separate EventManager triggers]]></title>
+            <link href="/2014/05/30/sharing-context-between-separate-eventmanager-triggers"/>
+            <updated>2014-05-30T09:53:39-02:30</updated>
+            <id>/2014/05/30/sharing-context-between-separate-eventmanager-triggers</id>
+            <content type="html"><![CDATA[<p>When building out the service layer I like to wrap each action in event manager triggers so I can extend it's behavior later from other modules without introducing a direct dependency.  One tidbit that the <code>Zend\EventManager</code> docs only mention in passing is that the <code>argv</code> parameter of <code>EventManagerInterface::trigger</code> isn't restricted to array - it can be an object as well.  With one simple deviation from the documented example we can share state between our service class and all event listeners: pass an <code>ArrayObject</code>:</p>
+
+<pre><code class="php">$argv = new \ArrayObjecct();
+$argv-&gt;arg1 = '...';
+$argv-&gt;arg2 = '...';
+
+$em-&gt;trigger("my.event", $this, $argv);
+</code></pre>
+
+<p>Now, when an event listener makes a change to one of the arguments passed into <code>argv</code> of the trigger call the service class will retain those changes so you can use them later. </p>
+
+<p>Here's a generic example of what the <code>update</code> method of a service class generally look like:</p>
+
+<pre><code class="php">&lt;?php
+class MyService
+{
+    public function update($entity, $data)
+    {
+        $em = $this-&gt;getEventManager();
+        $form = $this-&gt;getUpdateForm();
+        $mapper = $this-&gt;getRepository();
+
+        $argv = new \ArrayObject();
+        $argv-&gt;form = $form;
+        $argv-&gt;entity = $entity;
+        $argv-&gt;data = $data;
+
+        // Use a Zend\Form to hydrate the entity
+        $em-&gt;trigger("update.form.pre", $this, $argv);
+        $form-&gt;bind($entity);
+        $form-&gt;setData($data);
+        $isValid = $argv['formIsValid'] = $form-&gt;isValid();
+        $em-&gt;trigger("update.form.post", $this, $argv);
+
+        // Short circuit if validation failed
+        if ( ! $isValid ) {
+            return false;
+        }
+
+        // Extract the hydrated entity and save it
+        $entity = $form-&gt;getData();
+        $em-&gt;trigger("update.save.pre", $this, $argv);
+        $mapper-&gt;save($entity);
+        $em-&gt;trigger("update.save.post", $this, $argv);
+
+        return $entity;
+    }
+}
+</code></pre>
+]]></content>
+        </entry>
+            <entry>
+            <title type="html"><![CDATA[Standalone Input Filter classes and ZF2 Form Collections]]></title>
+            <link href="/2014/05/03/standalone-input-filter-classes-and-zf2-form-collections"/>
+            <updated>2014-05-03T21:32:03-02:30</updated>
+            <id>/2014/05/03/standalone-input-filter-classes-and-zf2-form-collections</id>
+            <content type="html"><![CDATA[<p>While building some Zend\Form monstrosity with infinite* nested fieldsets and collections every which way I, the form (which uses externally-constructed InputFilters) would fail validation with no visible error messages.  The problem?  I was doing this:</p>
+
+<pre><code class="php">$mainInputFilter = new InputFilter();
+// Add the fields of my main-fieldset
+
+$collectionInputFilter = new InputFilter();
+// Add the fields of my sub-fieldset
+
+$mainInputFilter-&gt;add($collectionInputFilter, 'collection-name');
+</code></pre>
+
+<p>When I should have been doing this:</p>
+
+<pre><code class="php">$mainInputFilter = new InputFilter();
+// Add the fields of my main-fieldset
+
+$collectionInputFilter = new InputFilter();
+// Add the fields of my sub-fieldset
+
+$collectionContainerFilter = new CollectionInputFilter();
+$collectionContainerFilter-&gt;setInputFilter($collectionInputFilter);
+
+$mainInputFilter-&gt;add($collectionContainerFilter, 'collection-name');
+</code></pre>
+
+<p>Subtle difference makes all the difference.  The InputFilter for the fieldset representing the elements of your Collection has to be added to a <code>CollectionInputFilter</code>, which then gets added to the InputFilter for the fieldset containing the Collection.  Otherwise the validation will fail, but no errors are passed back to the form from the InputFilter (since no form elements match your mis-configured InputFilter), so you won't see the failed validation messages unless you var_dump a call to <code>$form-&gt;getInputFilter()-&gt;getMessages()</code></p>
+
+<p><em>Reminder to myself: Add this to the ZF2 docs when you get a chance</em></p>
+
+<p>* = Tiny amount of hyperbole</p>
+]]></content>
+        </entry>
+            <entry>
+            <title type="html"><![CDATA[Doctrine collections and nested ZF2 fieldset collections]]></title>
+            <link href="/2014/04/25/doctrine-collections-nested-zf2-fieldset-collections"/>
+            <updated>2014-04-25T19:24:14-02:30</updated>
+            <id>/2014/04/25/doctrine-collections-nested-zf2-fieldset-collections</id>
+            <content type="html"><![CDATA[<p>On a recent project, which uses a ZF2 Form+Fieldset+InputFilter confab to hydrate a matching Doctrine ORM object model, I encountered something new: collection instances get shared between collections when using collections inside of collections (Yes, you read that right :P)</p>
+
+<p>The Situation:</p>
+
+<p>In our domain model, Competitions contain one or more Divisions, which themselves contain one or more Teams:</p>
+
+<pre><code>Competition &lt;-- Division &lt;-- Team
+</code></pre>
+
+<p>As implemented with ZF2 forms, the <code>CompetitionFieldset</code> contains a <code>Zend\Form\Element\Collection</code> element, which holds all the divisions of the competition as <code>DivisionFieldset</code> instances:</p>
+
+<pre><code>// Competition Fieldset
+class CompetitionFieldset extends Fieldset
+{
+    public function init()
+    {
+        // snipped for brevity
+        // $fsDivision instanceof DivisionFieldset
+
+        $this-&gt;add(array(
+            'type'    =&gt; 'Zend\Form\Element\Collection',
+            'name'    =&gt; 'divisions',
+            'options' =&gt; array(
+                'target_element' =&gt; $fsDivision,
+            )
+        ));
+    }
+}
+
+// Competition Entity
+class CompetitionEntity
+{
+    protected $divisions;
+
+    public function __construct()
+    {
+        $this-&gt;divisions = new ArrayCollection();
+    }
+}
+</code></pre>
+
+<p>The Division fieldset itself contains a Collection element holding all of the teams assigned to the division, as instances of <code>TeamFieldset</code></p>
+
+<pre><code>// Division fieldset
+class DivisionFieldset extends Fieldset
+{
+    public function init()
+    {
+        // snipped for brevity
+        // $fsTeam instanceof TeamFieldset
+
+        $this-&gt;add(array(
+            'type'    =&gt; 'Zend\Form\Element\Collection',
+            'name'    =&gt; 'teams',
+            'options' =&gt; array(
+                'target_element' =&gt; $fsTeam,
+            )
+        ));
+    }
+}
+
+// Division entity
+class DivisionEntity
+{
+    protected $teams;
+
+    public function __construct()
+    {
+        $this-&gt;teams = new ArrayCollection();
+    }
+}
+</code></pre>
+
+<p>Once everything is collected together into a form and the <code>DoctrineObject</code> hydrators and prototype entity instances are all assigned to the form and it's respective fieldsets, an issue popped up:</p>
+
+<p>When I add multiple divisions to the competition, assign some teams to each one, submit the form and wait for <code>Zend\Form</code> and Doctrine to do their turn-that-POST-nonsense-into-a-PHP-object thing, it goes sideways.  All the divisions I added are properly represented in the <code>CompetitionEntity::divisions</code> collection as distinct <code>DivisionEntity</code> instances, but they all have the same set of <code>TeamEntity</code> objects in their <code>teams</code> collection.  Indeed, all the <code>DivisionEntity</code> objects have the <em>same</em> <code>ArrayCollection</code>.  Why?</p>
+
+<p>The answer is, in hindsight, simple:  <code>Zend\Form\Element\Collection</code> takes the prototype object we gave it's fieldset and <code>clone</code>s it for each element of the <code>divisions</code> array in the POST data.  However, PHP doesn't deep-clone, and so all those clones of <code>DivisionEntity</code> share the same internal instance of <code>ArrayCollection</code> that was assigned to <code>teams</code> in the prototype object.  To prevent this we have to give each clone it's own <code>ArrayCollection</code> instance by adding a <code>__clone</code> method to the class:</p>
+
+<pre><code>class DivisionEntity
+{
+    protected $teams;
+
+    public function __construct()
+    {
+        $this-&gt;teams = new ArrayCollection();
+    }
+
+    public function __clone()
+    {
+        $this-&gt;teams = new ArrayCollection();
+    }
+}
+</code></pre>
+
+<p>And Bob's your uncle, all is well once again in ZF2+Doctrine land :)</p>
+
+<p><strong>Summary &amp; TL;DR</strong>: if the object you bind to a fieldset placed in an <code>Zend\Form\Element\Collection</code> element composes other objects, you need to add an <code>__clone</code> method to give each clone their own instance of each associated object, as in the <code>DivisionEntity</code> example above.  </p>
+]]></content>
+        </entry>
+            <entry>
+            <title type="html"><![CDATA[Execute Composer commands from your PHP application]]></title>
+            <link href="/2013/06/13/execute-composer-commands-from-your-php-application"/>
+            <updated>2013-06-13T21:52:00-02:30</updated>
+            <id>/2013/06/13/execute-composer-commands-from-your-php-application</id>
+            <content type="html"><![CDATA[<p>I'll just leave this here...</p>
+
+<h3 id="exampleclonezf2szendskeletonapplication">Example: Clone ZF2's ZendSkeletonApplication</h3>
+
+<p>ZendSkeletonApplication is installed using this composer command line:</p>
+
+<pre><code>php composer.phar create-project -sdev --repository-url="http://packages.zendframework.com" zendframework/skeleton-application /path/to/skeleton-application
+</code></pre>
+
+<p>The equivalent using Composer source is:</p>
+
+<pre><code>$obj = new \Composer\Command\CreateProjectCommand();
+$input = new \Symfony\Component\Console\Input\ArrayInput(array(
+    'package'          =&gt; 'zendframework/skeleton-application',
+    'directory'        =&gt; '/path/to/skeleton-application',
+    '--stability'      =&gt; 'dev',
+    '--repository-url' =&gt; 'http://packages.zendframework.com',
+), $obj-&gt;getDefinition());
+$output = new \Symfony\Component\Console\Output\ConsoleOutput();
+$obj-&gt;run($input,$output);
+</code></pre>
+]]></content>
+        </entry>
+            <entry>
+            <title type="html"><![CDATA[Quick-and-dirty ZF2: Zend\Navigation]]></title>
+            <link href="/2012/07/25/quick-and-dirty-zf2-zendnavigation"/>
+            <updated>2012-07-25T17:07:00-02:30</updated>
+            <id>/2012/07/25/quick-and-dirty-zf2-zendnavigation</id>
+            <content type="html"><![CDATA[<p>Quick-and-dirty introduction to using Zend\Navigation in Zend Framework 2.</p>
+
+<h2 id="1addservicemanagerfactory">(1) Add Service Manager Factory</h2>
+
+<p>Add the following to your module configuration file (<code>config/module.config.php</code>) or place it in an autoloadable file in your application's <code>config/autoload</code> folder:</p>
+
+<pre><code>'service_manager' =&gt; array(
+    'factories' =&gt; array(
+        'Navigation' =&gt; 'Zend\Navigation\Service\DefaultNavigationFactory',
+    ),
+);
+</code></pre>
+
+<p>This tells ZF2′s Serivce Manager to load the default Zend\Navigation instance factory. This factory will read a page tree from the application configuration and register a new instance of the navigation data container (<code>Zend\Navigation\Navigation</code>) with the service manager under the name <code>Navigation</code>.</p>
+
+<h2 id="2configuresitemap">(2) Configure Sitemap</h2>
+
+<p>For each module in your application you will need to construct a sitemap for the routes exposed by that module. As an example, here is one that I use with <a href="https://github.com/ZF-Commons/ZfcUser">ZfcUser</a> in my own application:</p>
+
+<pre><code>&lt;?php
+// config/autoload/nav_zfcuser.global.php
+return array(
+    // All navigation-related configuration is collected in the 'navigation' key
+    'navigation' =&gt; array(
+        // The DefaultNavigationFactory we configured in (1) uses 'default' as the sitemap key
+        'default' =&gt; array(
+            // And finally, here is where we define our page hierarchy
+            'account' =&gt; array(
+                'label' =&gt; 'Account',
+                'route' =&gt; 'zfcuser',
+                'pages' =&gt; array(
+                    'home' =&gt; array(
+                        'label' =&gt; 'Dashboard',
+                        'route' =&gt; 'zfcuser',
+                    ),
+                    'login' =&gt; array(
+                        'label' =&gt; 'Sign In',
+                        'route' =&gt; 'zfcuser/login',
+                    ),
+                    'logout' =&gt; array(
+                        'label' =&gt; 'Sign Out',
+                        'route' =&gt; 'zfcuser/logout',
+                    ),
+                    'register' =&gt; array(
+                        'label' =&gt; 'Register',
+                        'route' =&gt; 'zfcuser/register',
+                    ),
+                ),
+            ),
+        ),
+    ),
+);
+</code></pre>
+
+<h2 id="3usingtheviewhelpers">(3) Using the View Helpers</h2>
+
+<p>Now that you’ve set up the necessary configuration, all that’s left to do is use it! There are a <a href="https://github.com/zendframework/zf2/tree/master/library/Zend/View/Helper/Navigation">number of bundled view helpers</a> which you can use to inject navigation components into your views.</p>
+
+<h3 id="examplebreadcrumbs">Example: Breadcrumbs</h3>
+
+<p>To render breadcrumbs add the following line to one of your views (I put it in my application’s layout view):</p>
+
+<pre><code>&lt;?php echo $this-&gt;navigation('Navigation')-&gt;breadcrumbs(); ?&gt;
+</code></pre>
+
+<h3 id="examplemenu">Example: Menu</h3>
+
+<p>To render a sidebar navigation menu, add the following line to the location in your view script where you want the menu rendered:</p>
+
+<pre><code>&lt;?php echo $this-&gt;navigation('Navigation')-&gt;menu(); ?&gt;
+</code></pre>
+
+<p>This view helper also provides additional methods for altering the output. For example, to display only the active branch of the menu, append the call setOnlyActiveBranch(true) like so:</p>
+
+<pre><code>&lt;?php echo $this-&gt;navigation('Navigation')-&gt;menu()-&gt;setOnlyActiveBranch(true); ?&gt;
+</code></pre>
+]]></content>
+        </entry>
+    </feed>
