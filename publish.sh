@@ -5,7 +5,7 @@ if [ $# -ne 1 ]; then
     exit 1;
 fi
 
-sculpin generate --env=prod
+./vendor/bin/sculpin generate --env=prod
 if [ $? -ne 0 ]; then echo "Could not generate the site"; exit 1; fi
 
 git stash
